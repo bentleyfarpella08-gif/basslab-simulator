@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#080b12">
+<title>BassLab — Subwoofer Simulator</title>
+<style>
+:root{--bg:#080b12;--panel:#111827;--panel2:#0d1420;--line:#243247;--text:#f3f6fb;--muted:#9ba9bc;--blue:#38bdf8;--green:#34d399;--orange:#fb923c}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#15243a 0,#080b12 55%);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh;padding:env(safe-area-inset-top) 14px calc(24px + env(safe-area-inset-bottom))}
+.app{max-width:760px;margin:auto}.top{display:flex;align-items:center;justify-content:space-between;padding:17px 2px 12px}.brand{font-weight:900;letter-spacing:.08em;font-size:18px}.brand span{color:var(--blue)}.pill{font-size:11px;color:#a5f3fc;border:1px solid #155e75;background:#083344;padding:6px 9px;border-radius:20px}
+h1{font-size:27px;margin:10px 0 4px;letter-spacing:-.04em}.sub{color:var(--muted);font-size:13px;margin:0 0 17px}
+.panel{background:linear-gradient(150deg,rgba(20,30,47,.96),rgba(10,15,24,.98));border:1px solid var(--line);border-radius:19px;padding:15px;margin:12px 0;box-shadow:0 12px 30px #0003}
+.panelhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}.panelhead h2{font-size:14px;margin:0;letter-spacing:.02em}.tag{color:var(--muted);font-size:11px}
+.trunk{position:relative;height:235px;border-radius:14px;overflow:hidden;background:linear-gradient(#111d2c,#080b11);border:1px solid #34455b;perspective:500px}
+.trunk:before{content:"";position:absolute;left:5%;right:5%;bottom:0;height:75%;background:linear-gradient(160deg,#263548,#101722);clip-path:polygon(9% 0,91% 0,100% 100%,0 100%);border-top:3px solid #64748b}
+.trunk:after{content:"";position:absolute;left:8%;right:8%;bottom:10px;height:8px;background:#0008;border-radius:50%;filter:blur(6px)}
+.glow{position:absolute;left:8%;right:8%;bottom:22px;height:8px;background:var(--glow,#1684c7);filter:blur(17px);opacity:.75}
+.box3d{position:absolute;z-index:2;bottom:25px;left:50%;transform:translateX(-50%);width:min(84%,480px);height:139px;background:linear-gradient(145deg,#303b4c,#0b1018 75%);border:2px solid #475569;border-radius:8px;box-shadow:0 15px 20px #000b,inset 0 2px 4px #ffffff1a;display:flex;align-items:center;justify-content:space-evenly;padding:9px}
+.speaker{width:42%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 50% 50%,#080b10 0 12%,#475569 13% 16%,#111827 17% 28%,#05080d 29% 34%,#64748b 35% 39%,#161e29 40% 51%,#05070b 52% 58%,#475569 59% 62%,#111827 63%);border:2px solid #94a3b8;box-shadow:inset 0 0 8px #000;display:grid;place-items:center;transition:transform .04s linear;will-change:transform}
+.speaker:after{content:"BASSLAB";font-size:7px;font-weight:900;letter-spacing:.1em;color:#9ca3af}
+.mini{position:absolute;top:10px;left:11px;color:#cbd5e1;font-size:10px;z-index:3;letter-spacing:.13em}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.stat{background:#080e18;border:1px solid #1e293b;border-radius:12px;padding:10px}.stat small{display:block;color:var(--muted);font-size:10px}.stat b{font-size:18px;font-variant-numeric:tabular-nums}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:12px 0}.btn,button,select,input[type=file]{font:inherit}.btn{border:1px solid #334155;background:#111827;color:#e5e7eb;border-radius:12px;padding:11px 8px;font-size:12px;font-weight:700}.btn.active{background:#075985;border-color:#38bdf8;color:#e0f2fe}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:12px}.control{background:#0a111c;border:1px solid #223047;border-radius:13px;padding:12px}.control label{display:flex;justify-content:space-between;gap:5px;font-size:12px;color:#cbd5e1;margin-bottom:11px}.control output{color:var(--blue);font-weight:800}.control input[type=range]{width:100%;accent-color:var(--blue)}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.action{border:0;border-radius:12px;padding:13px;font-weight:800;background:#0284c7;color:white}.action.secondary{background:#1e293b;color:#e2e8f0;border:1px solid #334155}.action.green{background:#047857}.full{width:100%}
+select{width:100%;padding:11px;border-radius:10px;border:1px solid #334155;background:#0b1220;color:#e5e7eb}
+.upgrades{display:grid;grid-template-columns:1fr 1fr;gap:8px}.upgrade{background:#0a111c;border:1px solid #25344a;border-radius:12px;padding:12px}.upgrade strong{font-size:12px;display:block}.upgrade p{font-size:11px;color:var(--muted);margin:5px 0 10px}.upgrade button{width:100%;padding:9px;border:1px solid #334155;border-radius:9px;background:#1e293b;color:white;font-weight:700;font-size:11px}.upgrade button:disabled{opacity:.5}
+.note{color:var(--muted);font-size:11px;line-height:1.5}.filelabel{display:block;text-align:center;border:1px dashed #475569;padding:13px;border-radius:12px;font-size:12px;color:#cbd5e1;margin-top:9px}input[type=file]{display:none}
+footer{text-align:center;color:#64748b;font-size:10px;padding:10px 0 22px}
+@media(min-width:600px){.trunk{height:290px}.box3d{height:170px}.speaker{max-width:160px}.controls{grid-template-columns:repeat(4,1fr)}}
+</style>
+</head>
+<body>
+<div class="app">
+ <div class="top"><div class="brand">🔊 BASS<span>LAB</span></div><div class="pill">CAR AUDIO SIMULATOR</div></div>
+ <h1>Build your bass setup.</h1><p class="sub">Tune test tones, watch the cones move, and customize your trunk.</p>
+ <section class="panel">
+  <div class="panelhead"><h2>LIVE TRUNK VIEW</h2><span class="tag" id="status">SYSTEM IDLE</span></div>
+  <div class="trunk" id="trunk"><div class="mini" id="boxlabel">DUAL 12″ • SEALED BOX</div><div class="glow"></div><div class="box3d" id="box3d"><div class="speaker"></div><div class="speaker"></div></div></div>
+  <div class="stats"><div class="stat"><small>FREQUENCY</small><b id="freqStat">40 <small>Hz</small></b></div><div class="stat"><small>AMPLIFIER</small><b id="ampStat">1200 <small>W</small></b></div><div class="stat"><small>VIRTUAL SPL</small><b id="splStat">105 <small>dB</small></b></div></div>
+ </section>
+ <div class="tabs"><button class="btn active" data-tab="sound">Sound & Tones</button><button class="btn" data-tab="build">Trunk Build</button><button class="btn" data-tab="upgrade">Upgrades</button></div>
+ <section class="panel tabpanel" id="sound">
+  <div class="panelhead"><h2>BASS TEST TONES</h2><span class="tag">LOW-FREQUENCY OSCILLATOR</span></div>
+  <div class="controls">
+   <div class="control"><label for="freq">Frequency <output id="freqOut">40 Hz</output></label><input id="freq" type="range" min="20" max="100" value="40"></div>
+   <div class="control"><label for="volume">Volume <output id="volumeOut">25%</output></label><input id="volume" type="range" min="0" max="50" value="25"></div>
+   <div class="control"><label for="bass">Cone motion <output id="bassOut">65%</output></label><input id="bass" type="range" min="10" max="100" value="65"></div>
+   <div class="control"><label for="glowColor">Trunk lighting</label><select id="glowColor"><option value="#1684c7">Ice blue</option><option value="#7c3aed">Purple</option><option value="#10b981">Emerald</option><option value="#dc2626">Red</option><option value="#f59e0b">Amber</option></select></div>
+  </div>
+  <div class="actions" style="margin-top:12px"><button class="action" id="playTone">▶ Play test tone</button><button class="action secondary" id="stopTone">■ Stop sound</button></div>
+  <p class="note">Start at low volume. These are generated tones, not a real SPL meter. Phone speakers may not reproduce very low frequencies accurately.</p>
+ </section>
+ <section class="panel tabpanel" id="build" hidden>
+  <div class="panelhead"><h2>CUSTOM TRUNK</h2><span class="tag">VISUAL CONFIGURATOR</span></div>
+  <div class="control" style="margin-bottom:9px"><label for="subCount">Subwoofer count</label><select id="subCount"><option value="1">Single subwoofer</option><option value="2" selected>Dual subwoofers</option><option value="3">Triple subwoofers</option><option value="4">Four subwoofers</option></select></div>
+  <div class="control" style="margin-bottom:9px"><label for="subSize">Subwoofer size</label><select id="subSize"><option value="8">8 inch</option><option value="10">10 inch</option><option value="12" selected>12 inch</option><option value="15">15 inch</option></select></div>
+  <div class="control" style="margin-bottom:9px"><label for="boxType">Enclosure type</label><select id="boxType"><option value="Sealed">Sealed box</option><option value="Ported">Ported box</option><option value="Bandpass">Bandpass box</option></select></div>
+  <div class="control"><label for="carType">Vehicle</label><select id="carType"><option>Coupe</option><option selected>Pickup truck</option><option>Sedan</option><option>SUV</option></select></div>
+  <p class="note">This is a visual mock-up; dimensions and acoustic response are illustrative, not enclosure design specifications.</p>
+ </section>
+ <section class="panel tabpanel" id="upgrade" hidden>
+  <div class="panelhead"><h2>SHOP & UPGRADES</h2><span class="tag">CREDITS: <b id="credits">1200</b></span></div>
+  <div class="upgrades">
+   <div class="upgrade"><strong>⚡ Amplifier upgrade</strong><p>More virtual power and cone movement.</p><button data-upgrade="amp">Buy • 400 credits</button></div>
+   <div class="upgrade"><strong>🔊 Better subwoofers</strong><p>Boost the visual bass response.</p><button data-upgrade="subs">Buy • 300 credits</button></div>
+   <div class="upgrade"><strong>📦 Reinforced enclosure</strong><p>Upgrade your virtual trunk build.</p><button data-upgrade="box">Buy • 250 credits</button></div>
+   <div class="upgrade"><strong>💡 LED show kit</strong><p>Brighter trunk accent lighting.</p><button data-upgrade="led">Buy • 200 credits</button></div>
+  </div>
+  <p class="note" id="upgradeMsg">Credits are stored on this device in your browser.</p>
+ </section>
+ <section class="panel">
+  <div class="panelhead"><h2>PLAY YOUR MUSIC</h2><span class="tag">LOCAL AUDIO FILE</span></div>
+  <p class="note">Choose an audio file stored on your iPhone. Playback stays in your browser; this demo does not upload your music.</p>
+  <label class="filelabel" for="musicFile">＋ Choose music file from iPhone</label><input id="musicFile" type="file" accept="audio/*">
+  <div id="musicName" class="note" style="margin:9px 0">No track selected</div>
+  <audio id="music" controls style="width:100%;display:none"></audio>
+ </section>
+ <footer>BASSLAB • Browser-based simulator • Not a real sound-pressure measurement tool</footer>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+let audioCtx=null, osc=null, gain=null, credits=1200, amp=1200, subsUpgrade=0, boxUpgrade=0, ledUpgrade=0, raf=null, phase=0;
+const speakers=[...document.querySelectorAll('.speaker')];
+function setStatus(t){$('status').textContent=t}
+function updateStats(){
+ const f=+$('freq').value, vol=+$('volume').value, motion=+$('bass').value;
+ $('freqOut').textContent=f+' Hz'; $('volumeOut').textContent=vol+'%'; $('bassOut').textContent=motion+'%';
+ $('freqStat').innerHTML=f+' <small>Hz</small>'; $('ampStat').innerHTML=amp+' <small>W</small>';
+ $('splStat').innerHTML=(96+Math.round(vol*.36+subsUpgrade*2+boxUpgrade)).toString()+' <small>dB*</small>';
+ $('trunk').style.setProperty('--glow',$('glowColor').value);
+ $('boxlabel').textContent=$('subCount').value+' × '+$('subSize').value+'″ • '+$('boxType').value.toUpperCase()+' BOX';
+ const n=+$('subCount').value, size=+$('subSize').value;
+ $('box3d').style.width=(Math.min(91,68+n*5))+'%';
+ speakers.forEach((s,i)=>{s.style.display=i<n?'grid':'none';s.style.width=(n>=3?'28%':n===2?'42%':'68%');});
+ $('box3d').style.height=(115+size*2.1)+'px';
+ $('credits').textContent=credits;
+ document.querySelectorAll('[data-upgrade]').forEach(b=>{let cost={amp:400,subs:300,box:250,led:200}[b.dataset.upgrade];b.disabled=credits<cost;});
+}
+function animate(){
+ const f=+$('freq').value, motion=+$('bass').value/100;
+ const moving=(osc!==null || $('music').paused===false);
+ speakers.forEach((s,i)=>{
+   let a=moving ? Math.sin(performance.now()/1000*2*Math.PI*f/8+i*.35)*motion*(2+subsUpgrade*.6):Math.sin(performance.now()/900+i)*.35;
+   s.style.transform=`scale(${1+a*.14})`;
+ });
+ raf=requestAnimationFrame(animate);
+}
+function stopTone(){
+ if(osc){try{osc.stop()}catch(e){};osc.disconnect();osc=null}
+ if(gain){gain.disconnect();gain=null}
+ setStatus('SYSTEM IDLE'); $('playTone').textContent='▶ Play test tone';
+}
+function playTone(){
+ stopTone();
+ const AC=window.AudioContext||window.webkitAudioContext;
+ if(!AC){alert('Audio is not supported in this browser.');return}
+ audioCtx=audioCtx||new AC();
+ audioCtx.resume();
+ osc=audioCtx.createOscillator(); gain=audioCtx.createGain();
+ osc.type='sine'; osc.frequency.value=+$('freq').value;
+ gain.gain.value=(+$('volume').value/100)*0.18;
+ osc.connect(gain);gain.connect(audioCtx.destination);osc.start();
+ setStatus('PLAYING '+$('freq').value+' HZ');$('playTone').textContent='▶ Tone playing';
+}
+$('playTone').addEventListener('click',playTone);
+$('stopTone').addEventListener('click',stopTone);
+$('freq').addEventListener('input',()=>{updateStats();if(osc)osc.frequency.setTargetAtTime(+$('freq').value,audioCtx.currentTime,.03);if(osc)setStatus('PLAYING '+$('freq').value+' HZ')});
+['volume','bass','glowColor','subCount','subSize','boxType','carType'].forEach(id=>$(id).addEventListener('input',updateStats));
+document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{
+ document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));
+ document.querySelectorAll('.tabpanel').forEach(x=>x.hidden=x.id!==b.dataset.tab);
+}));
+document.querySelectorAll('[data-upgrade]').forEach(b=>b.addEventListener('click',()=>{
+ const type=b.dataset.upgrade,cost={amp:400,subs:300,box:250,led:200}[type];
+ if(credits<cost)return;credits-=cost;
+ if(type==='amp')amp+=600;
+ if(type==='subs')subsUpgrade++;
+ if(type==='box')boxUpgrade++;
+ if(type==='led'){ledUpgrade++;$('trunk').style.setProperty('--glow',ledUpgrade%2?'#38bdf8':'#a855f7');}
+ $('upgradeMsg').textContent='Upgrade installed! Your build has been updated.';
+ updateStats();save();
+}));
+function save(){
+ try{localStorage.setItem('basslabSave',JSON.stringify({credits,amp,subsUpgrade,boxUpgrade,ledUpgrade,subCount:$('subCount').value,subSize:$('subSize').value,boxType:$('boxType').value,carType:$('carType').value,glowColor:$('glowColor').value}))}catch(e){}
+}
+function load(){
+ try{const d=JSON.parse(localStorage.getItem('basslabSave')||'null');if(!d)return;
+ credits=d.credits??credits;amp=d.amp??amp;subsUpgrade=d.subsUpgrade||0;boxUpgrade=d.boxUpgrade||0;ledUpgrade=d.ledUpgrade||0;
+ ['subCount','subSize','boxType','carType','glowColor'].forEach(k=>{if(d[k]!==undefined)$(k).value=d[k]});
+ }catch(e){}
+}
+['subCount','subSize','boxType','carType','glowColor'].forEach(id=>$(id).addEventListener('change',save));
+$('musicFile').addEventListener('change',()=>{
+ const file=$('musicFile').files[0];if(!file)return;
+ const url=URL.createObjectURL(file);$('music').src=url;$('music').style.display='block';$('musicName').textContent=file.name;
+ $('music').play().then(()=>setStatus('MUSIC PLAYING')).catch(()=>setStatus('READY'));
+});
+$('music').addEventListener('play',()=>setStatus('MUSIC PLAYING'));
+$('music').addEventListener('pause',()=>{if(!osc)setStatus('SYSTEM IDLE')});
+load();updateStats();animate();
+</script>
+</body>
+</html>
