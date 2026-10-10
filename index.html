@@ -141,3 +141,85 @@ document.getElementById('devCashButton').addEventListener('click',()=>{const raw
 makeVibe();render();
 })();
 </script></body></html>
+<style>
+/* BassLab true-3D speaker assembly layer */
+#coneOverlay{display:none!important}
+#basslab3d{position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none;display:block}
+.scene{isolation:isolate}
+.scenephoto{z-index:0}
+.sceneheader{z-index:5}
+@media(max-width:760px){#basslab3d{transform:translateZ(0)}}
+</style>
+<script type="module">
+(async()=>{
+ const host=document.getElementById('scene'); if(!host)return;
+ const canvas=document.createElement('canvas');canvas.id='basslab3d';canvas.setAttribute('aria-label','Real-time 3D subwoofer cone simulation');host.appendChild(canvas);
+ let THREE;
+ try{THREE=await import('https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js')}catch(e){canvas.remove();console.warn('BassLab 3D requires an internet connection for Three.js.',e);return}
+ const renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true,powerPreference:'high-performance'});
+ renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.75));renderer.setClearColor(0x000000,0);renderer.outputColorSpace=THREE.SRGBColorSpace;
+ const scene=new THREE.Scene();
+ const camera=new THREE.PerspectiveCamera(34,1,.1,100);camera.position.set(0,0,15);camera.lookAt(0,0,0);
+ scene.add(new THREE.HemisphereLight(0xcfeaff,0x07101d,2.0));
+ const key=new THREE.DirectionalLight(0xffffff,2.3);key.position.set(-3,5,8);scene.add(key);
+ const blue=new THREE.PointLight(0x168cff,7,18);blue.position.set(0,2,4);scene.add(blue);
+ const rimLight=new THREE.DirectionalLight(0x6baeff,1.7);rimLight.position.set(4,-2,4);scene.add(rimLight);
+ const drivers=[];
+ const metal=new THREE.MeshStandardMaterial({color:0x343d46,metalness:.88,roughness:.3});
+ const rubber=new THREE.MeshStandardMaterial({color:0x090c10,metalness:.12,roughness:.62});
+ const coneMat=new THREE.MeshStandardMaterial({color:0x171d24,metalness:.34,roughness:.48,side:THREE.DoubleSide});
+ const capMat=new THREE.MeshStandardMaterial({color:0x080b0f,metalness:.52,roughness:.27});
+ const screwMat=new THREE.MeshStandardMaterial({color:0x9ba9b7,metalness:.95,roughness:.22});
+ // Four separate 3D assemblies, aligned over the photographed drivers.
+ for(let i=0;i<4;i++){
+   const group=new THREE.Group();scene.add(group);
+   const outer=new THREE.Mesh(new THREE.TorusGeometry(1.0,.065,12,64),metal);group.add(outer);
+   const surround=new THREE.Mesh(new THREE.TorusGeometry(.82,.105,16,64),rubber);group.add(surround);
+   const coneGeo=new THREE.BufferGeometry();
+   const radial=48, rings=14, positions=[], indices=[], base=[];
+   // Cone surface has a shallow dish and flexible profile; vertices deform along Z each frame.
+   for(let r=0;r<=rings;r++){
+     const rr=.70*r/rings;
+     for(let j=0;j<=radial;j++){
+       const a=j/radial*Math.PI*2; const x=Math.cos(a)*rr,y=Math.sin(a)*rr;
+       const z=-.13*(rr/.70)**2 + .012*Math.sin(rr*34);
+       positions.push(x,y,z);base.push(x,y,z);
+       if(r<rings&&j<radial){const a0=r*(radial+1)+j,b=a0+radial+1;indices.push(a0,b,a0+1,b,b+1,a0+1)}
+     }
+   }
+   coneGeo.setIndex(indices);coneGeo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));coneGeo.userData.base=base;coneGeo.computeVertexNormals();
+   const cone=new THREE.Mesh(coneGeo,coneMat);group.add(cone);
+   const cap=new THREE.Mesh(new THREE.SphereGeometry(.245,32,18),capMat);cap.scale.z=.42;cap.position.z=-.105;group.add(cap);
+   const capRing=new THREE.Mesh(new THREE.TorusGeometry(.247,.018,8,40),metal);capRing.position.z=-.105;group.add(capRing);
+   // Visible mounting screws around the rim.
+   for(let k=0;k<12;k++){const a=k*Math.PI/6;const screw=new THREE.Mesh(new THREE.CylinderGeometry(.026,.026,.018,12),screwMat);screw.rotation.x=Math.PI/2;screw.position.set(Math.cos(a)*.91,Math.sin(a)*.91,.015);group.add(screw)}
+   // Voice-coil/former hinted at behind the moving cone.
+   const coil=new THREE.Mesh(new THREE.CylinderGeometry(.23,.23,.16,32,1,true),metal);coil.position.z=-.29;group.add(coil);
+   drivers.push({group,cone,cap,capRing,geo:coneGeo,base,phase:i*.48,x:0,v:0,disp:0});
+ }
+ function resize(){const r=host.getBoundingClientRect();renderer.setSize(Math.max(1,r.width),Math.max(1,r.height),false);camera.aspect=r.width/Math.max(1,r.height);camera.updateProjectionMatrix();
+   // Positions and scale match the four speaker faces in the trunk photo.
+   const w=r.width,h=r.height; const centers=[.235,.405,.575,.745];
+   drivers.forEach((d,i)=>{d.group.position.set((centers[i]-.5)*camera.position.z*2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))*camera.aspect, (0.5-.695)*camera.position.z*2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2)),.25);const diameter=Math.min(w*.145,h*.235);d.group.scale.setScalar(diameter/2.15)});
+ }
+ const ro=new ResizeObserver(resize);ro.observe(host);resize();
+ let last=performance.now(),elapsed=0;
+ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.04,(now-last)/1000||.016);last=now;elapsed+=dt;
+   const bassOn=host.classList.contains('bass-on')||document.body.classList.contains('music-on');
+   const toneBtn=document.querySelector('.tone.active, .testtone.active, [data-tone].active');
+   const toneText=toneBtn?(toneBtn.dataset.tone||toneBtn.textContent):'';const match=String(toneText).match(/\d+/);const hz=match?Math.max(20,Math.min(120,Number(match[0]))):40;
+   const boost=document.querySelector('#bassBoost, #boost, input[name="boost"]');const boostVal=boost?Number(boost.value):0;
+   // Driven damped oscillator: m*x'' + c*x' + k*x = F*sin(wt), integrated semi-implicitly.
+   // Frequency is time-scaled for visibility; relative excursion follows the selected tone and bass controls.
+   const driveHz=Math.max(2.2,Math.min(8.5,hz/9));const force=bassOn?(1.2+Math.max(0,boostVal)*.025):0;
+   for(const d of drivers){const omega=driveHz*2*Math.PI;const acceleration=force*Math.sin(elapsed*omega+d.phase)-18*d.disp-5.4*d.v;d.v+=acceleration*dt;d.disp+=d.v*dt;d.disp=THREE.MathUtils.clamp(d.disp,-.105,.105);
+     const pos=d.geo.attributes.position;for(let j=0;j<pos.count;j++){const bi=j*3;const x=d.base[bi],y=d.base[bi+1],z=d.base[bi+2];const rr=Math.min(1,Math.sqrt(x*x+y*y)/.70);const envelope=Math.max(0,1-rr*rr);pos.array[bi]=x;pos.array[bi+1]=y;pos.array[bi+2]=z+d.disp*envelope;}
+     pos.needsUpdate=true;d.geo.computeVertexNormals();d.cap.position.z=-.105+d.disp*.93;d.capRing.position.z=-.105+d.disp*.93;d.group.rotation.z=Math.sin(elapsed*1.4+d.phase)*.002;
+   }
+   blue.intensity=bassOn?7+Math.abs(Math.sin(elapsed*driveHz))*3:3.5;renderer.render(scene,camera);
+ }
+ requestAnimationFrame(frame);
+ // Expose a tiny diagnostics flag for troubleshooting, not game state.
+ window.BassLab3D={renderer,drivers,physics:'damped spring-mass cone excursion'};
+})();
+</script>
