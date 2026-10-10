@@ -199,8 +199,17 @@ makeVibe();render();
  }
  function resize(){const r=host.getBoundingClientRect();renderer.setSize(Math.max(1,r.width),Math.max(1,r.height),false);camera.aspect=r.width/Math.max(1,r.height);camera.updateProjectionMatrix();
    // Positions and scale match the four speaker faces in the trunk photo.
-   const w=r.width,h=r.height; const centers=[.235,.405,.575,.745];
-   drivers.forEach((d,i)=>{d.group.position.set((centers[i]-.5)*camera.position.z*2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))*camera.aspect, (0.5-.695)*camera.position.z*2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2)),.25);const diameter=Math.min(w*.145,h*.235);d.group.scale.setScalar(diameter/2.15)});
+   const w=r.width,h=r.height; const centers=[.205,.402,.598,.795];
+   const viewH=2*camera.position.z*Math.tan(THREE.MathUtils.degToRad(camera.fov/2));
+   const viewW=viewH*camera.aspect;
+   // Convert desired pixel diameter into world units. The previous code treated pixels as world units,
+   // making the 3D rings enormous and hiding the trunk photo.
+   drivers.forEach((d,i)=>{
+     d.group.position.set((centers[i]-.5)*viewW, (.5-.695)*viewH, .25);
+     const diameterPx=Math.min(w*.145,h*.235);
+     const worldScale=(diameterPx*viewH/Math.max(1,h))/2.0;
+     d.group.scale.setScalar(worldScale);
+   });
  }
  const ro=new ResizeObserver(resize);ro.observe(host);resize();
  let last=performance.now(),elapsed=0;
